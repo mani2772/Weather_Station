@@ -1,0 +1,96 @@
+#include "DHT.h"
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <WiFi.h>
+#include "ThingSpeak.h"
+
+// DHT setup
+#define DHTPIN 4
+#define DHTTYPE DHT22
+DHT dht(DHTPIN, DHTTYPE);
+
+// OLED setup
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+const char* ssid = "Wokwi-GUEST";   // Wokwi virtual WiFi
+const char* password = "";          // no password
+
+// ThingSpeak setup
+WiFiClient client;
+unsigned long channelID =  3036686;                  
+const char* writeAPIKey = "TSQQYGZ087J0BEEZ";   
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+
+  // Connect WiFi
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi Connected!");
+
+  ThingSpeak.begin(client);
+
+  // OLED init
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println("SSD1306 allocation failed");
+    for (;;);
+  }
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.println("Weather + IoT Ready");
+  display.display();
+  delay(2000);
+}
+
+void loop() {
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+
+  if (isnan(h) || isnan(t)) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+
+  // Print to Serial
+  Serial.print("Temp: ");
+  Serial.print(t);
+  Serial.print(" °C   Humidity: ");
+  Serial.print(h);
+  Serial.println(" %");
+
+  // Show on OLED
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.setTextSize(1);
+  display.println("Weather Monitor");
+  display.setTextSize(2);
+  display.setCursor(0, 20);
+  display.print(t);
+  display.println(" C");
+  display.setCursor(0, 45);
+  display.print(h);
+  display.println(" %");
+  display.display();
+
+  // Send data to ThingSpeak
+  ThingSpeak.setField(1, t);  // Field 1: Temperature
+  ThingSpeak.setField(2, h);  // Field 2: Humidity
+
+  int response = ThingSpeak.writeFields(channelID, writeAPIKey);
+
+  if (response == 200) {
+    Serial.println("Data sent to ThingSpeak successfully!");
+  } else {
+    Serial.println("Error sending data: " + String(response));
+  }
+
+  delay(20000); // Update every 20 seconds (ThingSpeak min is 15 sec)
+}
