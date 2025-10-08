@@ -28,11 +28,9 @@ The system uses sensors and microcontrollers to collect environmental data and d
 ## 📷 Design Media
 
 ### 🔹Working
-![working](./Weather_Station/weather_station/working.png)
+![working](./weather_Station/working.png)
 ### 🔹Dashboard
-![Dashboard](./weather_station/thingspeak_iot_dashboard.png)
-
----
+![Dashboard](./weather_Station/thingspeak_iot_dashboard.png)
 
 ## 🛠 Tools Used
 - **Arduino IDE** → Programming and debugging  
